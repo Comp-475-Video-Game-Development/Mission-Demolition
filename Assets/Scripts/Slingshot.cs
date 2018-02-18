@@ -1,12 +1,16 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class Slingshot : MonoBehaviour
 {
+    static private Slingshot S;
+
     [Header("Set in Inspector")]
     public GameObject prefabProjectile;
     public float velocityMul = 8f;
+    public Button button;
 
     [Header("Set Dynamically")]
     public GameObject launchPoint;
@@ -14,6 +18,20 @@ public class Slingshot : MonoBehaviour
     public GameObject projectile;
     public bool aimingMode;
     private Rigidbody projectileRigidbody;
+
+    private bool shotInProgress = false;
+
+    static public Vector3 LAUNCH_POS
+    {
+        get
+        {
+            if (S == null)
+            {
+                return Vector3.zero;
+            }
+            return S.launchPos;
+        }
+    }
 
     void Awake()
     {
@@ -47,11 +65,14 @@ public class Slingshot : MonoBehaviour
 
         if (Input.GetMouseButtonUp(0))
         {
+            Invoke("ShotNoLongerInProgress", 3f);
             aimingMode = false;
             projectileRigidbody.isKinematic = false;
             projectileRigidbody.velocity = -mouseDelta * velocityMul;
             FollowCam.POI = projectile;
             projectile = null;
+            MissionDemolition.ShotFired();
+            ProjectileLine.S.poi = projectile;
         }
     }
 
@@ -67,11 +88,22 @@ public class Slingshot : MonoBehaviour
 
     void OnMouseDown()
     {
-        aimingMode = true;
-        projectile = Instantiate(prefabProjectile) as GameObject;
-        projectile.transform.position = launchPos;
-        projectile.GetComponent<Rigidbody>().isKinematic = true;
-        projectileRigidbody = projectile.GetComponent<Rigidbody>();
-        projectileRigidbody.isKinematic = true;
+        if (!shotInProgress)
+        {
+            button.enabled = false;
+            shotInProgress = true;
+            aimingMode = true;
+            projectile = Instantiate(prefabProjectile) as GameObject;
+            projectile.transform.position = launchPos;
+            projectile.GetComponent<Rigidbody>().isKinematic = true;
+            projectileRigidbody = projectile.GetComponent<Rigidbody>();
+            projectileRigidbody.isKinematic = true;
+        }
+    }
+
+    private void ShotNoLongerInProgress()
+    {
+        shotInProgress = false;
+        button.enabled = true;
     }
 }
